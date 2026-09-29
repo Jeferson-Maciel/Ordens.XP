@@ -1,0 +1,1585 @@
+/* ═══════════════════════════════════════════════════════════════════════════════════════
+   Assistente de Ordens XP — sistema visual
+
+   Esta é uma ferramenta de expediente: fica aberta o dia todo e é lida por horas seguidas.
+   Todas as decisões abaixo saem daí.
+
+   • Nenhum extremo. O modo claro não usa branco puro no fundo nem preto puro no texto; o
+     escuro não usa preto puro. Os extremos são o que cansa a vista ao longo do dia, porque
+     forçam a pupila a se readaptar a cada troca de foco entre a tela e o resto da sala.
+   • Cor com parcimônia. O âmbar da marca aparece em poucos lugares; verde, vermelho e âmbar
+     carregam significado (compra, venda, atenção) e por isso não decoram nada.
+   • Saturação baixa no escuro. Cor saturada sobre fundo escuro vibra na retina — os mesmos
+     tons aparecem aqui suavizados, não os do modo claro reaproveitados.
+   • Movimento curto e com motivo. Nada que chame atenção duas vezes para a mesma coisa.
+   ═══════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ─────────────────────────────────────────────────────────────────────────────
+   O tema é um atributo do <html>, aplicado por um script inline antes da primeira pintura. */
+
+:root {
+  /* Escalas que não dependem do tema */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  --esp-1: 0.25rem;
+  --esp-2: 0.5rem;
+  --esp-3: 0.75rem;
+  --esp-4: 1rem;
+  --esp-5: 1.5rem;
+  --esp-6: 2rem;
+
+  --fonte: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto,
+    'Helvetica Neue', sans-serif;
+  --fonte-titulo: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, BlinkMacSystemFont,
+    Roboto, sans-serif;
+  --fonte-mono: 'Cascadia Mono', ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
+
+  /* Movimento: curto o bastante para não fazer esperar, longo o bastante para orientar. */
+  --t-rapido: 120ms;
+  --t-medio: 180ms;
+  --t-lento: 260ms;
+  --curva: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Modo escuro — cinza-azulado profundo, nunca preto. O contraste do texto principal fica
+   por volta de 11:1: legível com folga, sem o branco estourado que deixa halo na vista. */
+:root[data-tema='escuro'] {
+  --fundo: #16181d;
+  --fundo-sutil: #1b1e24;
+  --superficie: #1e2128;
+  --superficie-alta: #242831;
+  --superficie-afundada: #141619;
+
+  --borda: #2c313a;
+  --borda-forte: #3a404b;
+
+  --texto-forte: #e3e6ec;
+  --texto: #b3bac6;
+  /* Não desce mais que isto: rótulos e contadores usam corpo pequeno, e abaixo de 4.5:1
+     viram esforço de leitura em vez de informação secundária. */
+  --texto-fraco: #8c95a2;
+
+  --marca: #e0a44e;
+  --marca-fundo: rgba(224, 164, 78, 0.12);
+  --marca-borda: rgba(224, 164, 78, 0.34);
+
+  --positivo: #5cb98a;
+  --positivo-fundo: rgba(92, 185, 138, 0.13);
+  --positivo-borda: rgba(92, 185, 138, 0.32);
+
+  --negativo: #e0837c;
+  --negativo-fundo: rgba(224, 131, 124, 0.12);
+  --negativo-borda: rgba(224, 131, 124, 0.3);
+
+  --atencao: #d9a951;
+  --atencao-fundo: rgba(217, 169, 81, 0.12);
+  --atencao-borda: rgba(217, 169, 81, 0.3);
+
+  --info: #6fa8d6;
+
+  /* Classes de ativo — os mesmos matizes do modo claro, clareados e dessaturados para não
+     vibrarem sobre fundo escuro. */
+  --classe-acao: #7cb0e0;
+  --classe-fii: #5fc0ae;
+  --classe-bdr: #b096e0;
+  --classe-etf: #71b6d6;
+  --classe-fiagro: #a3c26e;
+  --classe-fundo: #d3a276;
+  --classe-outros: #9aa3b0;
+  --classe-cetipado: #bb9ad8;
+
+  --veu: rgba(8, 10, 14, 0.58);
+
+  /* No escuro a sombra quase não aparece: a separação vem da borda e do nível de superfície. */
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-alta: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --foco: 0 0 0 3px rgba(224, 164, 78, 0.28);
+}
+
+/* Modo claro — neutro morno em quatro níveis, não branco sobre branco.
+
+   O tom é levemente quente de propósito. Combina com o âmbar da marca, e uma luz de fundo com
+   menos azul é percebida como mais macia em leitura longa do que o branco azulado de tela.
+
+   Os níveis vão do mais escuro ao mais claro e cada um tem um papel fixo: a página afunda, o
+   cartão sobe sobre ela, o campo afunda de novo dentro do cartão, e o branco puro fica reservado
+   ao que flutua por cima de tudo. É a hierarquia que faltava quando o cartão era branco puro
+   sobre um fundo quase branco — sem diferença entre os níveis, a tela vira uma chapa só. */
+:root[data-tema='claro'] {
+  --fundo-sutil: #e4e1d9; /* cabeçalho de tabela, trilho dos segmentados, fichas */
+  --fundo: #edeae3; /* a página */
+  --superficie-afundada: #f5f3ee; /* campos, blocos de saída, itens de lista */
+  --superficie: #fcfbf8; /* cartões e cabeçalho — off-white morno, nunca branco puro */
+  --superficie-alta: #ffffff; /* só o que flutua: gaveta e avisos */
+
+  --borda: #e0dbd2;
+  --borda-forte: #c8c2b6;
+
+  /* Grafite morno, não preto: em cartão claro o preto puro produz contraste duro demais para
+     quem passa o dia lendo a tela. */
+  --texto-forte: #33302b;
+  --texto: #524f49;
+  --texto-fraco: #6b675f;
+
+  --marca: #945c06;
+  --marca-fundo: rgba(214, 145, 28, 0.14);
+  --marca-borda: rgba(173, 113, 16, 0.36);
+
+  --positivo: #1d7348;
+  --positivo-fundo: rgba(29, 115, 72, 0.11);
+  --positivo-borda: rgba(29, 115, 72, 0.28);
+
+  --negativo: #ad3a2f;
+  --negativo-fundo: rgba(173, 58, 47, 0.1);
+  --negativo-borda: rgba(173, 58, 47, 0.26);
+
+  --atencao: #855805;
+  --atencao-fundo: rgba(214, 145, 28, 0.14);
+  --atencao-borda: rgba(173, 113, 16, 0.3);
+
+  --info: #2b6a9c;
+
+  /* Classes de ativo — ver a nota em "Cores de classe de ativo". */
+  --classe-acao: #2f6296;
+  --classe-fii: #1c7365;
+  --classe-bdr: #6a4c99;
+  --classe-etf: #2a6a87;
+  --classe-fiagro: #4b7024;
+  --classe-fundo: #8a5729;
+  --classe-outros: #5c6068;
+  --classe-cetipado: #7a5195;
+
+  --veu: rgba(48, 43, 36, 0.3);
+  --sombra: 0 1px 2px rgba(56, 48, 36, 0.07);
+  --sombra-alta: 0 12px 32px rgba(56, 48, 36, 0.13);
+  --foco: 0 0 0 3px rgba(173, 113, 16, 0.24);
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* A troca de tema atravessa a página inteira; sem isto ela pisca. */
+  transition: background-color var(--t-lento) var(--curva);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: var(--fonte);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--t-lento) var(--curva), color var(--t-lento) var(--curva);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--fonte-titulo);
+  color: var(--texto-forte);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--marca-fundo);
+  color: var(--texto-forte);
+}
+
+:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--borda-forte);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--texto-fraco);
+  background-clip: content-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ── Cabeçalho ──────────────────────────────────────────────────────────────────────── */
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: var(--esp-3) var(--esp-6);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borda);
+  transition: background-color var(--t-lento) var(--curva), border-color var(--t-lento) var(--curva);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.logo > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--esp-2);
+}
+
+.logo strong {
+  font-family: var(--fonte-titulo);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--texto-forte);
+  letter-spacing: -0.01em;
+}
+
+.logo-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-md);
+  background: var(--marca-fundo);
+  border: 1px solid var(--marca-borda);
+  color: var(--marca);
+  font-family: var(--fonte-titulo);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sub-badge {
+  font-family: var(--fonte-mono);
+  font-size: 0.68rem;
+  color: var(--texto-fraco);
+  letter-spacing: 0.02em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 0.44rem 0.8rem;
+  background: transparent;
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.header-btn:hover {
+  background: var(--fundo-sutil);
+  border-color: var(--borda-forte);
+  color: var(--texto-forte);
+}
+
+.header-btn:active {
+  transform: translateY(1px);
+}
+
+.counter-badge {
+  min-width: 1.35rem;
+  padding: 0 0.32rem;
+  border-radius: 999px;
+  background: var(--fundo-sutil);
+  border: 1px solid var(--borda);
+  color: var(--texto-fraco);
+  font-family: var(--fonte-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── Botão de tema ──────────────────────────────────────────────────────────────────── */
+
+.header-btn.icone {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.header-btn.icone svg {
+  grid-area: 1 / 1;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity var(--t-medio) var(--curva), transform var(--t-lento) var(--curva);
+}
+
+/* Cada ícone mostra o destino, não o estado atual: no escuro aparece o sol, porque clicar leva
+   ao claro. Eles giram um para dentro e outro para fora, em vez de trocar bruscamente. */
+:root[data-tema='escuro'] .icone-lua,
+:root[data-tema='claro'] .icone-sol {
+  opacity: 0;
+  transform: rotate(-70deg) scale(0.5);
+}
+
+:root[data-tema='escuro'] .icone-sol,
+:root[data-tema='claro'] .icone-lua {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
+/* ── Grade principal ────────────────────────────────────────────────────────────────── */
+
+.container {
+  max-width: 1520px;
+  margin: var(--esp-5) auto;
+  padding: 0 var(--esp-5);
+  display: grid;
+  /* minmax(0, 1fr) e não 1fr: o mínimo automático de 1fr deixaria a tabela larga do preview
+     empurrar a coluna para além da tela, em vez de rolar dentro do .table-container. */
+  grid-template-columns: 460px minmax(0, 1fr);
+  gap: var(--esp-5);
+  align-items: start;
+}
+
+#painel-entrada {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  position: sticky;
+  top: calc(59px + var(--esp-5));
+}
+
+#painel-formatos,
+#solicitacoes,
+#vazio {
+  grid-column: 2;
+}
+
+/* Vazio, o contêiner ainda ocuparia uma linha da grade e abriria dois vãos onde não há nada. */
+#solicitacoes:empty {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .container {
+    grid-template-columns: 1fr;
+    padding: 0 var(--esp-4);
+  }
+
+  #painel-entrada {
+    grid-row: auto;
+    position: static;
+  }
+
+  #painel-entrada,
+  #painel-formatos,
+  #solicitacoes,
+  #vazio {
+    grid-column: 1;
+  }
+}
+
+/* ── Painéis ────────────────────────────────────────────────────────────────────────── */
+
+.panel {
+  padding: var(--esp-5);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sombra);
+  transition: background-color var(--t-lento) var(--curva), border-color var(--t-lento) var(--curva);
+}
+
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-4);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-family: var(--fonte-titulo);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--texto-forte);
+}
+
+.meta-counter {
+  font-family: var(--fonte-mono);
+  font-size: 0.73rem;
+  color: var(--texto-fraco);
+  text-align: right;
+}
+
+/* ── Entrada ────────────────────────────────────────────────────────────────────────── */
+
+textarea {
+  display: block;
+  width: 100%;
+  height: 320px;
+  padding: var(--esp-4);
+  background: var(--superficie-afundada);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-md);
+  color: var(--texto-forte);
+  font-family: var(--fonte-mono);
+  font-size: 0.85rem;
+  line-height: 1.65;
+  resize: vertical;
+  transition: border-color var(--t-rapido) var(--curva), box-shadow var(--t-rapido) var(--curva),
+    background-color var(--t-lento) var(--curva);
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--marca-borda);
+  box-shadow: var(--foco);
+}
+
+textarea::placeholder {
+  color: var(--texto-fraco);
+  opacity: 0.75;
+}
+
+.button-group {
+  display: flex;
+  gap: var(--esp-2);
+  margin: var(--esp-4) 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+.button-group button {
+  /* Os secundários ficam do tamanho do rótulo e o primário absorve a sobra: com flex igual
+     para todos, "Colar e analisar" quebrava em duas linhas e desalinhava a fileira. */
+  flex: 0 1 auto;
+  white-space: nowrap;
+  padding: 0.56rem 0.9rem;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva),
+    transform var(--t-rapido) var(--curva);
+}
+
+.button-group button:hover {
+  background: var(--fundo-sutil);
+  border-color: var(--borda-forte);
+  color: var(--texto-forte);
+}
+
+.button-group button:active {
+  transform: translateY(1px);
+}
+
+.button-group .primary {
+  flex: 1 1 auto;
+  background: var(--marca-fundo);
+  border-color: var(--marca-borda);
+  color: var(--marca);
+}
+
+.button-group .primary:hover {
+  background: var(--marca-fundo);
+  border-color: var(--marca);
+  color: var(--marca);
+}
+
+.button-group .danger:hover {
+  border-color: var(--negativo-borda);
+  color: var(--negativo);
+  background: var(--negativo-fundo);
+}
+
+/* ── Exemplos ───────────────────────────────────────────────────────────────────────── */
+
+.presets-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.presets-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-fraco);
+}
+
+.presets-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+}
+
+.preset-btn {
+  padding: 0.28rem 0.58rem;
+  background: var(--superficie-afundada);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto-fraco);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.preset-btn:hover {
+  background: var(--marca-fundo);
+  border-color: var(--marca-borda);
+  color: var(--marca);
+}
+
+/* ── Formatos de saída ──────────────────────────────────────────────────────────────── */
+
+.formatos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+.formato {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 0.5rem 0.85rem;
+  background: var(--superficie-afundada);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.formato:hover {
+  border-color: var(--borda-forte);
+  color: var(--texto-forte);
+}
+
+.formato:has(input:checked) {
+  background: var(--marca-fundo);
+  border-color: var(--marca-borda);
+  color: var(--texto-forte);
+  font-weight: 600;
+}
+
+.formato input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--marca);
+  cursor: pointer;
+}
+
+/* ── Cartão de solicitação ──────────────────────────────────────────────────────────── */
+
+.solicitacao + .solicitacao,
+#solicitacoes > .solicitacao:first-child {
+  margin-top: var(--esp-5);
+}
+
+#solicitacoes > .solicitacao:first-child {
+  margin-top: 0;
+}
+
+.solicitacao {
+  animation: entrar var(--t-lento) var(--curva) both;
+}
+
+/* Escalonado: os cartões entram em sequência, o que deixa claro que são vários e quantos. */
+.solicitacao:nth-child(2) {
+  animation-delay: 60ms;
+}
+.solicitacao:nth-child(3) {
+  animation-delay: 120ms;
+}
+.solicitacao:nth-child(n + 4) {
+  animation-delay: 180ms;
+}
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Tabela do preview ──────────────────────────────────────────────────────────────── */
+
+.table-container {
+  overflow-x: auto;
+  border: 1px solid var(--borda);
+  border-radius: var(--r-md);
+  background: var(--superficie-afundada);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+thead th {
+  padding: 0.6rem 0.85rem;
+  background: var(--fundo-sutil);
+  border-bottom: 1px solid var(--borda);
+  color: var(--texto-fraco);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--borda);
+  color: var(--texto);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background-color var(--t-rapido) var(--curva);
+}
+
+tbody tr:hover {
+  background: var(--fundo-sutil);
+}
+
+.campo {
+  padding: 0.34rem 0.5rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto-forte);
+  font-family: var(--fonte-mono);
+  font-size: 0.82rem;
+  transition: border-color var(--t-rapido) var(--curva), box-shadow var(--t-rapido) var(--curva);
+}
+
+.campo:hover {
+  border-color: var(--borda-forte);
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--marca-borda);
+  box-shadow: var(--foco);
+}
+
+.campo-conta {
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Colunas justas ao conteúdo, com a folga toda indo para a coluna de ações, na direita.
+   Sem isto o navegador distribui a largura igualmente e a coluna do ticker fica com um vão
+   enorme, espalhando os campos de uma mesma ordem por toda a tela. */
+table.preview th,
+table.preview td {
+  width: 1%;
+}
+
+table.preview th:last-child,
+table.preview td:last-child {
+  width: 100%;
+  text-align: right;
+}
+
+.col-valor {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+/* ── Controle segmentado ────────────────────────────────────────────────────────────────
+   As opções ficam todas à vista. Num select fechado só a atual aparece, e conferir uma cesta
+   de dez ativos exigiria abrir linha por linha. */
+
+.segmentado {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--fundo-sutil);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+}
+
+.seg {
+  padding: 0.24rem 0.55rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--texto-fraco);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.seg:hover:not(.ativo) {
+  color: var(--texto-forte);
+}
+
+.seg.ativo {
+  background: var(--superficie);
+  color: var(--texto-forte);
+  box-shadow: var(--sombra);
+}
+
+/* Compra e venda ganham cor só quando escolhidas: a cor aqui responde "o que vai ser feito",
+   e pintar as duas o tempo todo tiraria a resposta. */
+.seg.compra.ativo {
+  background: var(--positivo-fundo);
+  color: var(--positivo);
+}
+
+.seg.venda.ativo {
+  background: var(--negativo-fundo);
+  color: var(--negativo);
+}
+
+/* ── Resumo da cesta ────────────────────────────────────────────────────────────────── */
+
+.resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+.ficha {
+  padding: 0.16rem 0.5rem;
+  background: var(--fundo-sutil);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto);
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ficha.compra {
+  background: var(--positivo-fundo);
+  border-color: var(--positivo-borda);
+  color: var(--positivo);
+}
+
+.ficha.venda {
+  background: var(--negativo-fundo);
+  border-color: var(--negativo-borda);
+  color: var(--negativo);
+}
+
+.ficha.misto {
+  background: var(--atencao-fundo);
+  border-color: var(--atencao-borda);
+  color: var(--atencao);
+}
+
+.ficha.valor {
+  font-family: var(--fonte-mono);
+  color: var(--texto-forte);
+}
+
+/* ── Selo de classificação do ticker ────────────────────────────────────────────────── */
+
+.selo {
+  display: inline-block;
+  margin-left: var(--esp-2);
+  padding: 0.08rem 0.38rem;
+  border-radius: var(--r-sm);
+  font-family: var(--fonte);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+/* ── Cores de classe de ativo ───────────────────────────────────────────────────────────
+   Um matiz por classe (ação, FII, BDR, ETF, Fiagro, fundo), para achar um BDR no meio de uma
+   lista de FIIs sem ler papel por papel.
+
+   Isto não enfraquece o alerta de ticker: o que o operador procura na varredura é o vermelho do
+   suspeito e o âmbar do desconhecido, e esses dois continuam sendo os únicos tons quentes e
+   saturados da coluna. Tudo o mais é frio e calmo — a ausência de alarme continua legível.
+
+   O fundo e a borda saem de um único matiz via color-mix, então acrescentar uma classe é
+   acrescentar uma cor, não três. */
+
+.selo {
+  --cor: var(--classe-outros);
+  background: color-mix(in srgb, var(--cor) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cor) 34%, transparent);
+  color: var(--cor);
+}
+
+.selo.classe-acao {
+  --cor: var(--classe-acao);
+}
+.selo.classe-fii {
+  --cor: var(--classe-fii);
+}
+.selo.classe-bdr {
+  --cor: var(--classe-bdr);
+}
+.selo.classe-etf {
+  --cor: var(--classe-etf);
+}
+.selo.classe-fiagro {
+  --cor: var(--classe-fiagro);
+}
+.selo.classe-fundo {
+  --cor: var(--classe-fundo);
+}
+
+.selo.suspeito {
+  --cor: var(--negativo);
+}
+
+.selo.desconhecido {
+  --cor: var(--atencao);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--r-sm);
+  background: var(--fundo-sutil);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.badge.buy {
+  background: var(--positivo-fundo);
+  border-color: var(--positivo-borda);
+  color: var(--positivo);
+}
+
+.badge.sell {
+  background: var(--negativo-fundo);
+  border-color: var(--negativo-borda);
+  color: var(--negativo);
+}
+
+.btn-remover {
+  width: 26px;
+  height: 26px;
+  /* inline-grid e não grid: como bloco ele ignoraria o text-align da célula de ações e
+     ficaria colado nos campos, em vez de recuado na direita, longe de um clique sem querer. */
+  display: inline-grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--texto-fraco);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.btn-remover:hover {
+  background: var(--negativo-fundo);
+  border-color: var(--negativo-borda);
+  color: var(--negativo);
+}
+
+/* Botão + para acrescentar uma linha em branco. Tracejado e em tom fraco: é espaço a preencher,
+   não ação principal, e não pode competir com o Copiar. */
+.btn-adicionar {
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--esp-3);
+  padding: 0.34rem 0.75rem;
+  background: transparent;
+  border: 1px dashed var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto-fraco);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.btn-adicionar:hover {
+  background: var(--marca-fundo);
+  border-color: var(--marca-borda);
+  color: var(--marca);
+}
+
+/* ── Horário e descartes ────────────────────────────────────────────────────────────── */
+
+.horario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-4);
+  margin-top: var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--superficie-afundada);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-md);
+  font-size: 0.82rem;
+}
+
+.horario label {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.descartadas {
+  margin-top: var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--atencao-fundo);
+  border: 1px solid var(--atencao-borda);
+  border-radius: var(--r-md);
+  font-size: 0.82rem;
+}
+
+.descartadas summary {
+  cursor: pointer;
+  color: var(--atencao);
+  font-weight: 600;
+  list-style: none;
+}
+
+.descartadas summary::-webkit-details-marker {
+  display: none;
+}
+
+.descartadas summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: var(--esp-2);
+  transition: transform var(--t-medio) var(--curva);
+}
+
+.descartadas[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.descartadas ul {
+  margin-top: var(--esp-3);
+  padding-left: var(--esp-5);
+  color: var(--texto);
+}
+
+.descartadas li + li {
+  margin-top: var(--esp-1);
+}
+
+.descartadas code {
+  font-family: var(--fonte-mono);
+  color: var(--texto-forte);
+}
+
+.descartadas li span {
+  color: var(--texto-fraco);
+}
+
+/* ── Saídas ─────────────────────────────────────────────────────────────────────────── */
+
+.area-saidas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  margin-top: var(--esp-5);
+}
+
+.saida {
+  padding: var(--esp-4);
+  background: var(--superficie-afundada);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-md);
+  animation: entrar var(--t-medio) var(--curva) both;
+}
+
+.saida.bloqueada {
+  background: var(--negativo-fundo);
+  border-color: var(--negativo-borda);
+}
+
+.saida .panel-header-row {
+  margin-bottom: var(--esp-3);
+}
+
+.saida .panel-title {
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.output-box {
+  max-height: 24rem;
+  padding: var(--esp-4);
+  overflow: auto;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto-forte);
+  font-family: var(--fonte-mono);
+  font-size: 0.8rem;
+  line-height: 1.7;
+  white-space: pre;
+  tab-size: 12;
+}
+
+/* A auditoria sai com a grade montada, como vai chegar no e-mail. A fonte é a mesma dos outros
+   quadros de saída, porque o HTML não declara nenhuma. A borda preta do HTML é para o e-mail
+   claro; aqui ela cede ao token, ou riscaria o modo escuro. */
+.output-tabela {
+  white-space: normal;
+}
+
+/* Largura do conteúdo, como no e-mail: a regra global de tabela esticaria a grade até a borda. */
+.output-tabela table {
+  width: auto;
+  margin: 0.15rem 0;
+  font-size: inherit;
+}
+
+/* As tabelas do sistema acendem a linha sob o mouse; esta é uma saída, não uma lista. */
+.output-tabela tr:hover {
+  background: none;
+}
+
+.output-tabela td {
+  border-color: var(--borda-forte) !important;
+  color: var(--texto-forte);
+}
+
+.copy-btn {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.9rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--r-sm);
+  color: var(--texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva),
+    transform var(--t-rapido) var(--curva);
+}
+
+.copy-btn:hover {
+  background: var(--marca-fundo);
+  border-color: var(--marca-borda);
+  color: var(--marca);
+}
+
+.copy-btn:active {
+  transform: translateY(1px);
+}
+
+/* ── Alertas ────────────────────────────────────────────────────────────────────────── */
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.alert + .alert {
+  margin-top: var(--esp-2);
+}
+
+.alert-danger {
+  background: var(--superficie);
+  border-color: var(--negativo-borda);
+  color: var(--texto-forte);
+}
+
+.alert-warning {
+  background: var(--atencao-fundo);
+  border-color: var(--atencao-borda);
+  color: var(--texto-forte);
+}
+
+.btn-confirmar {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 0.34rem 0.75rem;
+  background: var(--superficie);
+  border: 1px solid var(--marca-borda);
+  border-radius: var(--r-sm);
+  color: var(--marca);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), transform var(--t-rapido) var(--curva);
+}
+
+.btn-confirmar:hover {
+  background: var(--marca-fundo);
+  border-color: var(--marca);
+}
+
+.btn-confirmar:active {
+  transform: translateY(1px);
+}
+
+/* Conserto de um clique e confirmar, lado a lado, no canto do alerta. */
+.acoes-alerta {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+  margin-left: auto;
+}
+
+.acoes-alerta .btn-confirmar {
+  margin-left: 0;
+}
+
+.confirmado {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--positivo);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* ── Estado vazio ───────────────────────────────────────────────────────────────────── */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-6) var(--esp-4);
+  text-align: center;
+}
+
+.empty-state p {
+  color: var(--texto);
+  font-weight: 500;
+}
+
+.empty-state span {
+  color: var(--texto-fraco);
+  font-size: 0.85rem;
+}
+
+.empty-state.pequeno {
+  padding: var(--esp-5) var(--esp-4);
+}
+
+/* ── Gaveta do histórico ────────────────────────────────────────────────────────────── */
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--veu);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--t-medio) var(--curva), visibility var(--t-medio) var(--curva);
+}
+
+.drawer-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.history-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100vw);
+  height: 100vh;
+  background: var(--superficie);
+  border-left: 1px solid var(--borda);
+  box-shadow: var(--sombra-alta);
+  transform: translateX(100%);
+  transition: transform var(--t-lento) var(--curva);
+}
+
+.history-drawer.open {
+  transform: none;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: var(--esp-4) var(--esp-5);
+  border-bottom: 1px solid var(--borda);
+}
+
+.drawer-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-title-group strong {
+  font-family: var(--fonte-titulo);
+  font-size: 1rem;
+  color: var(--texto-forte);
+}
+
+.icon-close-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--texto-fraco);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.icon-close-btn:hover {
+  background: var(--fundo-sutil);
+  color: var(--texto-forte);
+}
+
+.drawer-search {
+  padding: var(--esp-4) var(--esp-5) var(--esp-3);
+}
+
+.drawer-search input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--superficie-afundada);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto-forte);
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition: border-color var(--t-rapido) var(--curva), box-shadow var(--t-rapido) var(--curva);
+}
+
+.drawer-search input:focus {
+  outline: none;
+  border-color: var(--marca-borda);
+  box-shadow: var(--foco);
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--esp-5) var(--esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.history-item {
+  padding: var(--esp-3);
+  background: var(--superficie-afundada);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-md);
+  transition: border-color var(--t-rapido) var(--curva);
+}
+
+.history-item:hover {
+  border-color: var(--borda-forte);
+}
+
+.history-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-2);
+}
+
+.history-time {
+  font-family: var(--fonte-mono);
+  font-size: 0.7rem;
+  color: var(--texto-fraco);
+}
+
+.history-client-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-2);
+}
+
+.history-client {
+  font-family: var(--fonte-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-forte);
+}
+
+.history-tickers {
+  margin-top: var(--esp-1);
+  font-family: var(--fonte-mono);
+  font-size: 0.75rem;
+  color: var(--texto-fraco);
+  overflow-wrap: anywhere;
+}
+
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-top: var(--esp-3);
+}
+
+.btn-history-load {
+  flex: 1;
+  padding: 0.34rem 0.6rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.btn-history-load:hover {
+  background: var(--marca-fundo);
+  border-color: var(--marca-borda);
+  color: var(--marca);
+}
+
+.btn-history-delete {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--texto-fraco);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.btn-history-delete:hover {
+  background: var(--negativo-fundo);
+  color: var(--negativo);
+}
+
+.drawer-footer {
+  padding: var(--esp-4) var(--esp-5);
+  border-top: 1px solid var(--borda);
+}
+
+.btn-clear-history {
+  width: 100%;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  color: var(--texto-fraco);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.btn-clear-history:hover {
+  background: var(--negativo-fundo);
+  border-color: var(--negativo-borda);
+  color: var(--negativo);
+}
+
+/* ── Avisos de tela ─────────────────────────────────────────────────────────────────── */
+
+#toasts {
+  position: fixed;
+  right: var(--esp-5);
+  bottom: var(--esp-5);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  pointer-events: none;
+}
+
+.toast {
+  padding: 0.65rem 1rem;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borda-forte);
+  border-left: 3px solid var(--marca);
+  border-radius: var(--r-sm);
+  box-shadow: var(--sombra-alta);
+  color: var(--texto-forte);
+  font-size: 0.84rem;
+  max-width: 24rem;
+  animation: toast-entra var(--t-lento) var(--curva) both;
+}
+
+@keyframes toast-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Movimento reduzido ─────────────────────────────────────────────────────────────────
+   Quem pediu menos movimento no sistema recebe a interface sem nenhum: as animações existem
+   para orientar, e para essas pessoas elas atrapalham em vez de orientar. */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.selo.classe-cetipado {
+  --cor: var(--classe-cetipado);
+}
+
+/* ── Candidatos de fundo ────────────────────────────────────────────────────────────────
+   O bloqueio de nome ambíguo não é confirmável de propósito: confirmar não decide qual dos
+   três XP Habitat o cliente pediu. Estes botões são a saída — clicar num deles escolhe. */
+
+.candidatos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: var(--esp-2);
+  max-width: 34rem;
+}
+
+.candidato {
+  padding: 0.22rem 0.5rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-left: 3px solid var(--classe-cetipado);
+  border-radius: var(--r-sm);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 0.76rem;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+
+.candidato:hover {
+  background: var(--marca-fundo);
+  border-color: var(--marca-borda);
+  border-left-color: var(--marca);
+  color: var(--texto-forte);
+}
+
+/* Nome de fundo é texto longo: a célula do ativo deixa de forçar uma linha só. */
+.col-ativo {
+  white-space: normal;
+  max-width: 36rem;
+}
